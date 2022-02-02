@@ -20,3 +20,7 @@ const EspProvisioning = NativeModules.EspProvisioning
 export function multiply(a: number, b: number): Promise<number> {
   return EspProvisioning.multiply(a, b);
 }
+
+export function helloGreeter(greeter: String): Promise<String> {
+  return EspProvisioning.helloGreeter(greeter);
+}

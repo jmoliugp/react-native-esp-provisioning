@@ -1,14 +1,18 @@
 import * as React from 'react';
 
 import { StyleSheet, View, Text } from 'react-native';
-import { multiply } from 'react-native-esp-provisioning';
+import { helloGreeter } from 'react-native-esp-provisioning';
+
+const greeter = 'Test McTesterson';
 
 export default function App() {
-  const [result, setResult] = React.useState<number | undefined>();
+  const [result, setResult] = React.useState<number | String | undefined>();
 
   React.useEffect(() => {
-    multiply(3, 7).then(setResult);
+    helloGreeter(greeter).then(setResult);
   }, []);
+
+  console.log('## result: ', result);
 
   return (
     <View style={styles.container}>
