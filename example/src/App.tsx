@@ -24,7 +24,7 @@ export default function App() {
         return (
           <>
             <Text>
-              Address: {address} Name: {name}
+              Address: {address}, Name: {name}
             </Text>
           </>
         );

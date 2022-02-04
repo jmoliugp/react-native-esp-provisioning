@@ -16,5 +16,5 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.dependency "React-Core"
-  s.dependency "ESPProvision"
+  s.dependency 'ESPProvision', '~> 2.0.10'
 end
