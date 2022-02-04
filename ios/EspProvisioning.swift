@@ -1,11 +1,23 @@
 import ESPProvision
 
-class EspDevice {
-  static let shared = EspDevice()
+class EspDeviceWrapper {
+  static let shared = EspDeviceWrapper()
   var espDevice: ESPDevice?
   func setDevice(device: ESPDevice) {
     self.espDevice = device
   }
+}
+
+class ErrorMessages {
+    static let DEVICE_NOT_FOUND = "Device not found";
+    static let NOT_FOUND_DEVICES = "No devices found";
+    static let DEFAULT_CONNECTION_ERROR = "Default connection error";
+
+    static func getLocalizedError(domain: String, code: Int, message: String) -> NSError {
+        let error = NSError(domain: domain, code: code, userInfo: [NSLocalizedDescriptionKey : message])
+        return error
+    }
+
 }
 
 @objc(EspProvisioning)
@@ -30,7 +42,6 @@ class EspProvisioning: NSObject {
     func getBleDevices(prefix: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
       // Check permissions
 
-      // Search for BLE devices (ESPProvisionManager.searchESPDevices())
       ESPProvisionManager.shared.searchESPDevices(devicePrefix:prefix, transport:.ble) { bleDevices, error in
         DispatchQueue.main.async {
           if bleDevices == nil {
@@ -45,10 +56,109 @@ class EspProvisioning: NSObject {
             "name": $0.name,
             "address": $0.name
           ]}
-          // Return found BLE device names
+
           resolve(deviceNames)
         }
       }
     }
+    
+    private var connectionDelegate: EPConnectionDelegate?
+    
+    @objc(connectDevice:withResolver:withRejecter:)
+    func connectDevice(successCallback: @escaping RCTResponseSenderBlock, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+        let delegate = EPConnectionDelegate()
+        
+        guard let espDevice = EspDeviceWrapper.shared.espDevice else {
+            reject("ESP_DEVICE_NOT_CONNECTED", "There is not an instance of ESPDevice set", nil)
+            return
+        }
+        
+        var completedFlag = false
+        
+        self.connectionDelegate = delegate
+        espDevice.connect(delegate: delegate) { status in
+            dump(status)
+            if(!completedFlag) {
+              completedFlag = true
+              switch(status) {
+              case .connected:
+                  resolve("connected")
+              case .failedToConnect(_):
+                  // Possibly the arg is an error, check on this.
+                  reject("FAILED_TO_CONNECT", "Connection failed", nil)
+              case .disconnected:
+                  resolve("disconnected")
+              @unknown default:
+                  resolve(status)
+              }
+            }
+        }
+    }
 
+    @objc(provideProofOfPoss:withResolver:withRejecter:)
+    func provideProofOfPoss(proofString: String, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+        
+        guard let delegate = self.connectionDelegate else {
+            reject("ESP_DEVICE_NOT_CONNECTED", "There is not an instance of ESPDevice set", nil)
+            return
+        }
+        
+        delegate.proofString = proofString
+        resolve("Proof of possesion set succesfully")
+    }
+    
+    @objc(connectToDevice:deviceProofOfPossession:withResolver:withRejecter:)
+    func connectToDevice(deviceAddress: String, deviceProofOfPossession: String, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+
+        let errorCode = 404
+        let errorDomain = "connectToDevice"
+
+        ESPProvisionManager.shared.createESPDevice(deviceName: deviceAddress, transport: .ble, security: .unsecure, proofOfPossession: deviceProofOfPossession, completionHandler: { device, _ in
+            if device == nil {
+
+                reject("\(errorCode)", errorDomain + "Device nil", ErrorMessages.getLocalizedError(domain: errorDomain, code: errorCode, message: ErrorMessages.DEVICE_NOT_FOUND))
+
+                return
+            }
+
+            let espDevice: ESPDevice = device!
+            EspDeviceWrapper.shared.setDevice(device: espDevice)
+
+            espDevice.connect(completionHandler: { status in
+
+                switch status {
+                case .connected:
+                    resolve("Connection success")
+                case let .failedToConnect(error):
+                    reject("\(error.code)", error.description, error)
+                default:
+                    reject("\(errorCode)", errorDomain + "Common error", ErrorMessages.getLocalizedError(domain: errorDomain, code: errorCode, message: ErrorMessages.DEFAULT_CONNECTION_ERROR))
+                }
+            })
+        })
+    }
+}
+
+
+
+
+
+class EPConnectionDelegate: NSObject, ESPDeviceConnectionDelegate {
+    var proofString: String?
+    override init() {}
+
+    func getProofOfPossesion(forDevice device: ESPDevice, completionHandler: @escaping (String) -> Void) {
+      //  if EspDeviceWrapper.shared.espDevice.name != device.name {
+      //      print("Not the device I expect")
+      //      completionHandler("")
+      //      return
+      //  }
+        guard let proofString = self.proofString else {
+            print("No proof string specified")
+            completionHandler("")
+            return
+        }
+
+        completionHandler(proofString)
+    }
 }
