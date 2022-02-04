@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
+import type { BleDevice } from 'src/types';
 
 const LINKING_ERROR =
   `The package 'react-native-esp-provisioning' doesn't seem to be linked. Make sure: \n\n` +
@@ -23,4 +24,8 @@ export function multiply(a: number, b: number): Promise<number> {
 
 export function helloGreeter(greeter: String): Promise<String> {
   return EspProvisioning.helloGreeter(greeter);
+}
+
+export function getBleDevices(prefix: String): Promise<BleDevice[]> {
+  return EspProvisioning.getBleDevices(prefix);
 }

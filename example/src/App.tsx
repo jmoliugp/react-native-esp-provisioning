@@ -1,22 +1,34 @@
 import * as React from 'react';
 
 import { StyleSheet, View, Text } from 'react-native';
-import { helloGreeter } from 'react-native-esp-provisioning';
-
-const greeter = 'Test McTesterson';
+import { getBleDevices } from 'react-native-esp-provisioning';
+import type { BleDevice } from 'src/types';
 
 export default function App() {
-  const [result, setResult] = React.useState<number | String | undefined>();
+  const [bleDevices, setBleDevices] = React.useState<BleDevice[] | undefined>();
 
   React.useEffect(() => {
-    helloGreeter(greeter).then(setResult);
-  }, []);
+    const getDevices = async () => {
+      const res = await getBleDevices('');
 
-  console.log('## result: ', result);
+      setBleDevices(res);
+    };
+
+    getDevices();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text>Result: {result}</Text>
+      <Text>Bluetooth devices:</Text>
+      {bleDevices?.map(({ address, name }) => {
+        return (
+          <>
+            <Text>
+              Address: {address} Name: {name}
+            </Text>
+          </>
+        );
+      })}
     </View>
   );
 }
