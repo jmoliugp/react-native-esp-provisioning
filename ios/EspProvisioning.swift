@@ -1,4 +1,5 @@
 import ESPProvision
+import Foundation
 
 class EspDeviceWrapper {
   static let shared = EspDeviceWrapper()
@@ -23,17 +24,6 @@ class ErrorMessages {
 @objc(EspProvisioning)
 class EspProvisioning: NSObject {
     var bleDevices:[ESPDevice]?
-
-    @objc(multiply:withB:withResolver:withRejecter:)
-    func multiply(a: Float, b: Float, resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
-        resolve(1001)
-    }
-     
-    @objc(helloGreeter:withResolver:withRejecter:) 
-    func helloGreeter(greeter: String, resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
-        let greet = "Hello \(greeter)!" 
-        resolve(greet)
-    }
     
     // Searches for BLE devices with a name starting with the given prefix.
     // The prefix must match the string in '/main/app_main.c'
@@ -56,55 +46,99 @@ class EspProvisioning: NSObject {
             "name": $0.name,
             "address": $0.name
           ]}
+            
+            if bleDevices != nil {
+                print(bleDevices?[0].name)
+            }
 
           resolve(deviceNames)
         }
       }
     }
     
+    @objc(createDevice:withResolver:withRejecter:)
+    func createDevice(_ deviceName: String, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+      ESPProvisionManager.shared.createESPDevice(
+          deviceName: deviceName,
+          transport: ESPTransport.ble,
+          security: ESPSecurity.secure,
+          proofOfPossession: "deviceProofOfPossession",
+          softAPPassword: "softAPPassword"
+      ){ espDevice, _ in
+          EspDeviceWrapper.shared.setDevice(device: espDevice!)
+          resolve("SUCCESS")
+      }
+    }
+    
     private var connectionDelegate: EPConnectionDelegate?
     
-    @objc(connectDevice:withResolver:withRejecter:)
-    func connectDevice(successCallback: @escaping RCTResponseSenderBlock, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
-        let delegate = EPConnectionDelegate()
-        
-        guard let espDevice = EspDeviceWrapper.shared.espDevice else {
-            reject("ESP_DEVICE_NOT_CONNECTED", "There is not an instance of ESPDevice set", nil)
-            return
+    @objc(connectDevice:withRejecter:)
+    func connectDevice(resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+      var completedFlag = false
+      EspDeviceWrapper.shared.espDevice!.connect(completionHandler: { status in
+          dump(status)
+          NSLog("## status: \(status)")
+        if(!completedFlag) {
+          completedFlag = true
+          switch(status) {
+          case .connected:
+              resolve("connected")
+          case .failedToConnect(_):
+              reject("FAILED_TO_CONNECT", "Connection failed", nil)
+          case .disconnected:
+              resolve("disconnected")
+          @unknown default:
+              resolve(status)
+          }
         }
-        
-        var completedFlag = false
-        
-        self.connectionDelegate = delegate
-        espDevice.connect(delegate: delegate) { status in
-            dump(status)
-            if(!completedFlag) {
-              completedFlag = true
-              switch(status) {
-              case .connected:
-                  resolve("connected")
-              case .failedToConnect(_):
-                  // Possibly the arg is an error, check on this.
-                  reject("FAILED_TO_CONNECT", "Connection failed", nil)
-              case .disconnected:
-                  resolve("disconnected")
-              @unknown default:
-                  resolve(status)
-              }
-            }
-        }
+      })
     }
+    
+//    @objc(connectDevice:withRejecter:)
+//    func connectDevice(resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+//        NSLog("## connectDevice: START")
+//        let delegate = EPConnectionDelegate()
+//        delegate.proofString = "deviceProofOfPossession"
+//
+//        guard let espDevice = EspDeviceWrapper.shared.espDevice else {
+//            reject("ESP_DEVICE_NOT_CONNECTED", "There is not an instance of ESPDevice set", nil)
+//            return
+//        }
+//
+//        var completedFlag = false
+//
+//        self.connectionDelegate = delegate
+//        NSLog("## connectDevice: espDevice.connect")
+//        espDevice.connect(delegate: delegate) { status in
+//            NSLog("## connectDevice: status ")
+//            dump(status)
+//            if(!completedFlag) {
+//              completedFlag = true
+//              switch(status) {
+//              case .connected:
+//                  resolve("connected")
+//              case .failedToConnect(_):
+//                  // Possibly the arg is an error, check on this.
+//                  reject("FAILED_TO_CONNECT", "Connection failed", nil)
+//              case .disconnected:
+//                  resolve("disconnected")
+//              @unknown default:
+//                  resolve(status)
+//              }
+//            }
+//        }
+//    }
 
     @objc(provideProofOfPoss:withResolver:withRejecter:)
-    func provideProofOfPoss(proofString: String, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    func provideProofOfPoss(proofOfPoss: String, resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
         
         guard let delegate = self.connectionDelegate else {
             reject("ESP_DEVICE_NOT_CONNECTED", "There is not an instance of ESPDevice set", nil)
             return
         }
         
-        delegate.proofString = proofString
-        resolve("Proof of possesion set succesfully")
+        delegate.proofString = proofOfPoss
+        resolve("SUCCESS")
     }
     
     @objc(connectToDevice:deviceProofOfPossession:withResolver:withRejecter:)
@@ -148,11 +182,11 @@ class EPConnectionDelegate: NSObject, ESPDeviceConnectionDelegate {
     override init() {}
 
     func getProofOfPossesion(forDevice device: ESPDevice, completionHandler: @escaping (String) -> Void) {
-      //  if EspDeviceWrapper.shared.espDevice.name != device.name {
-      //      print("Not the device I expect")
-      //      completionHandler("")
-      //      return
-      //  }
+       if EspDeviceWrapper.shared.espDevice.name != device.name {
+           print("Not the device I expect")
+           completionHandler("")
+           return
+       }
         guard let proofString = self.proofString else {
             print("No proof string specified")
             completionHandler("")
