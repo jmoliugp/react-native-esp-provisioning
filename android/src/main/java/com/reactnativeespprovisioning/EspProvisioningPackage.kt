@@ -1,5 +1,6 @@
 package com.reactnativeespprovisioning
 
+import EspProvisioningModule
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
