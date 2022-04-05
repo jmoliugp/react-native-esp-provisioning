@@ -40,7 +40,7 @@ export const DevicesList: React.FC = () => {
   return (
     <SafeAreaView style={styles.navBar}>
       <View style={styles.container}>
-        <Text>{strings.title}</Text>
+        <Text style={styles.title}>{strings.title}</Text>
         <View>
           <FlatList<BleDevice>
             data={bleDevices}

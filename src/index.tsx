@@ -18,6 +18,10 @@ const EspProvisioning = NativeModules.EspProvisioning
       }
     );
 
+export enum ResultOfOperation {
+  SUCCESS = 'Connection success',
+}
+
 export function getBleDevices(prefix: String): Promise<BleDevice[]> {
   return EspProvisioning.getBleDevices(prefix);
 }
@@ -33,3 +37,24 @@ export function createDevice(name: String): Promise<String> {
 export function connectDevice(): Promise<String> {
   return EspProvisioning.connectDevice();
 }
+
+export const connectToDevice = async (
+  deviceAddress: String,
+  deviceProofOfPossession: String,
+  mainServiceUUID?: String
+): Promise<boolean> => {
+  let result;
+  if (Platform.OS === 'ios') {
+    result = await EspProvisioning.connectToDevice(
+      deviceAddress,
+      deviceProofOfPossession
+    );
+  } else {
+    result = await EspProvisioning.connectToDevice(
+      deviceAddress,
+      deviceProofOfPossession,
+      mainServiceUUID
+    );
+  }
+  return result === ResultOfOperation.SUCCESS;
+};

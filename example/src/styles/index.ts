@@ -1,3 +1,3 @@
 import { normalizedWidth } from './scale';
 
-export const defaultSceneSpacing = normalizedWidth(16);
+export const defaultSceneSpacing = normalizedWidth(30);
