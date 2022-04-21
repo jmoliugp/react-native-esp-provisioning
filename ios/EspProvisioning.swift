@@ -182,7 +182,7 @@ class EPConnectionDelegate: NSObject, ESPDeviceConnectionDelegate {
     override init() {}
 
     func getProofOfPossesion(forDevice device: ESPDevice, completionHandler: @escaping (String) -> Void) {
-       if EspDeviceWrapper.shared.espDevice.name != device.name {
+       if EspDeviceWrapper.shared.espDevice!.name != device.name {
            print("Not the device I expect")
            completionHandler("")
            return

@@ -58,3 +58,15 @@ export const connectToDevice = async (
   }
   return result === ResultOfOperation.SUCCESS;
 };
+
+export function scanWifiList(
+  deviceAddress: String,
+  deviceProofOfPossession: String,
+  mainServiceUUID?: String
+): Promise<String> {
+  return EspProvisioning.scanWifiList(
+    deviceAddress,
+    deviceProofOfPossession,
+    mainServiceUUID
+  );
+}
