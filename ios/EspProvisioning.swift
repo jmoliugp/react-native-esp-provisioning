@@ -39,9 +39,9 @@ class EspProvisioning: NSObject {
               "deviceName": device.name,
               "security": device.security.rawValue,
               "transport": "\(device.transport)",
-              "proofOfPossession": "myProofOfPosession", // It is not required.
+              "proofOfPossession": "abcd1234",
               "softAPPassword": "mySoftAppPassword", // It is not required.
-              "advertisementData": []
+              "advertisementData": [:]
             ]}
             
             resolve(deviceNames)
@@ -57,68 +57,49 @@ class EspProvisioning: NSObject {
         }
     }
     
-    func scanDeviceForWiFiList() {
-        espDevice.scanWifiList { wifiList, _ in
-            if let list = wifiList {
-                self.wifiDetailList = list.sorted { $0.rssi > $1.rssi }
-            }
-        }
-    }
-    
     @objc(scanWifi:withResolver:withRejecter:)
-    func scanWifi(rawEspDevice: [String: Any], resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
-      
-        let device = ESPDevice(
-            name: rawEspDevice["deviceName"] as! String,
-            security: ESPSecurity(rawValue: rawEspDevice["security"] as! Int)!,
+    func scanWifi(rawEspDevice: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        ESPProvisionManager.shared.createESPDevice(
+            deviceName: rawEspDevice["deviceName"] as! String,
             transport: parseRawEspTransport(rawValue: rawEspDevice["transport"] as! String),
-            proofOfPossession: rawEspDevice["proofOfPossession"] as! String,
-            softAPPassword: rawEspDevice["softAPPassword"] as! String,
-            advertisementData: rawEspDevice["advertisementData"] as!  [String:Any])
-        
-        
-        device.connect(delegate: self) { status in
-            DispatchQueue.main.async {
-                Utility.hideLoader(view: self.view)
+            security: ESPSecurity(rawValue: rawEspDevice["security"] as! Int)!
+        ){ device, error in
+            
+            guard let device = device else {
+                reject("404", "scanWifi", error)
+                return
             }
-            switch status {
-            case .connected:
-                espDevice.scanWifiList { wifiList, _ in
-                    if let list = wifiList {
-                        let wifiNetworks = list.map {network in [
-                          "deviceName": device.name,
-                          "security": device.security.rawValue,
-                          "transport": "\(device.transport)",
-                          "proofOfPossession": "myProofOfPosession", // It is not required.
-                          "softAPPassword": "mySoftAppPassword", // It is not required.
-                          "advertisementData": []
-                        ]}
-                        
-                        resolve(wifiNetworks)
+        
+            device.connect(delegate: self) { status in
+                switch status {
+                case .connected:
+                    device.scanWifiList { wifiList, _ in
+                        if let list = wifiList {
+                            let wifiNetworks = list.map {network in [
+                              "ssid": network.ssid,
+                              "channel": network.channel,
+                              "rssi": network.rssi,
+                              "auth": network.auth.rawValue,
+                              // bssid
+                              // unknownFields
+                            ]}
+                            
+                            resolve(wifiNetworks)
+                        }
                     }
-                }
-            case let .failedToConnect(error):
-                DispatchQueue.main.async {
-                    var errorDescription = ""
-                    switch error {
-                    case .securityMismatch, .versionInfoError:
-                        errorDescription = error.description
-                    default:
-                        errorDescription = error.description + "\nCheck if POP is correct."
-                    }
-                    let action = UIAlertAction(title: "Retry", style: .default, handler: nil)
-                    self.showAlert(error: errorDescription, action: action)
-                }
-            default:
-                DispatchQueue.main.async {
-                    let action = UIAlertAction(title: "Retry", style: .default, handler: nil)
-                    self.showAlert(error: "Device disconnected", action: action)
+                case let .failedToConnect(error):
+                    reject("404", "scanWifi", error)
+                default:
+                    reject("404", "scanWifi", NSError(domain: "EspProvisioning", code: 500))
                 }
             }
         }
     }
 }
 
-
-
+extension EspProvisioning: ESPDeviceConnectionDelegate {
+    func getProofOfPossesion(forDevice: ESPDevice, completionHandler: @escaping (String) -> Void) {
+        completionHandler("abcd1234")
+    }
+}
 

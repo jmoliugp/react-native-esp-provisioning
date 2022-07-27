@@ -8,7 +8,8 @@ RCT_EXTERN_METHOD(getBleDevices:(NSString *)prefix
                  withRejecter:(RCTPromiseRejectBlock)reject)
 
 // Change signature, rawEspDevice: [String: Any] param is missing.
-RCT_EXTERN_METHOD(scanWifi:(RCTPromiseResolveBlock)resolve
+RCT_EXTERN_METHOD(scanWifi:(NSDictionary *)rawEspDevice
+                  withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 
 @end
