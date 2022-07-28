@@ -147,7 +147,6 @@ class EspProvisioning: NSObject {
                   resolve("UNKNOWN_ERROR")
                 }
               case .configApplied:
-//                resolve("CONFIG_APPLIED")
                   NSLog("configApplied")
               }
           }
