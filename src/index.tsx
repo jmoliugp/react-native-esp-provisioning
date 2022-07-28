@@ -1,5 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
-import type { BleDevice } from 'src/types';
+import type { BleDevice, ProvisionStatus, WifiNetwork } from 'src/entities';
 
 const LINKING_ERROR =
   `The package 'react-native-esp-provisioning' doesn't seem to be linked. Make sure: \n\n` +
@@ -26,47 +26,14 @@ export function getBleDevices(prefix: String): Promise<BleDevice[]> {
   return EspProvisioning.getBleDevices(prefix);
 }
 
-export function provideProofOfPoss(proofOfPoss: String): Promise<String> {
-  return EspProvisioning.provideProofOfPoss(proofOfPoss);
+export function scanWifi(rawEspDevice: BleDevice): Promise<WifiNetwork[]> {
+  return EspProvisioning.scanWifi(rawEspDevice);
 }
 
-export function createDevice(name: String): Promise<String> {
-  return EspProvisioning.createDevice(name);
-}
-
-export function connectDevice(): Promise<String> {
-  return EspProvisioning.connectDevice();
-}
-
-export const connectToDevice = async (
-  deviceAddress: String,
-  deviceProofOfPossession: String,
-  mainServiceUUID?: String
-): Promise<boolean> => {
-  let result;
-  if (Platform.OS === 'ios') {
-    result = await EspProvisioning.connectToDevice(
-      deviceAddress,
-      deviceProofOfPossession
-    );
-  } else {
-    result = await EspProvisioning.connectToDevice(
-      deviceAddress,
-      deviceProofOfPossession,
-      mainServiceUUID
-    );
-  }
-  return result === ResultOfOperation.SUCCESS;
-};
-
-export function scanWifiList(
-  deviceAddress: String,
-  deviceProofOfPossession: String,
-  mainServiceUUID?: String
-): Promise<String> {
-  return EspProvisioning.scanWifiList(
-    deviceAddress,
-    deviceProofOfPossession,
-    mainServiceUUID
-  );
+export function provision(
+  rawEspDevice: BleDevice,
+  ssid: string,
+  passPhrase: string
+): Promise<ProvisionStatus> {
+  return EspProvisioning.provision(rawEspDevice, ssid, passPhrase);
 }
