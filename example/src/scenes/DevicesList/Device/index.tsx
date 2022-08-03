@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { connectDevice, createDevice } from 'react-native-esp-provisioning';
-import type { BleDevice } from 'src/types';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { provision, scanWifi } from 'react-native-esp-provisioning';
+import type { BleDevice } from 'src/entities';
 
 import { styles } from './styles';
 
@@ -11,21 +11,25 @@ interface Props {
 
 export const Device: React.FC<Props> = (props) => {
   const onPress = async () => {
-    await createDevice(props.device.name);
-    await connectDevice();
+    // const wifiList = await scanWifi(props.device);
+    // console.log('## wifiList: ', wifiList);
+    // const provisioningStatus = await provision(props.device, SSID, PASS_PHRASE);
+    // console.log('## provisioningStatus: ', provisioningStatus);
   };
 
   return (
     <View style={styles.listElement}>
-      <Pressable onPress={onPress}>
+      <TouchableOpacity onPress={onPress}>
         <View style={styles.listContent}>
           <View style={styles.textGroup}>
-            <Text style={styles.todoTitle}>{props.device.name}</Text>
-            <Text style={styles.todoDescription}>{props.device.address}</Text>
+            <Text style={styles.todoTitle}>{props.device.deviceName}</Text>
+            <Text style={styles.todoDescription}>
+              {props.device.deviceName}
+            </Text>
           </View>
         </View>
         <View style={styles.separation} />
-      </Pressable>
+      </TouchableOpacity>
     </View>
   );
 };

@@ -7,21 +7,14 @@ RCT_EXTERN_METHOD(getBleDevices:(NSString *)prefix
                  withResolver:(RCTPromiseResolveBlock)resolve
                  withRejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(createDevice:(NSString *)deviceName
+RCT_EXTERN_METHOD(scanWifi:(NSDictionary *)rawEspDevice
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(provideProofOfPoss:(NSString *)proofOfPoss
+RCT_EXTERN_METHOD(provision:(NSDictionary *)rawEspDevice
+                  ssid: NSString
+                  passPhrase: NSString
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(connectDevice:(RCTPromiseResolveBlock)resolve
-                  withRejecter:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(connectBleDevice:(NSString *)deviceAddress
-                 deviceProofOfPossession:(NSString *)deviceProofOfPossession
-                 withResolver:(RCTPromiseResolveBlock)resolve
-                 withRejecter:(RCTPromiseRejectBlock)reject)
-
 
 @end

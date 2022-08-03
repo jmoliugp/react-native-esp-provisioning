@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { View, Text, SafeAreaView, FlatList, Platform } from 'react-native';
 import { getBleDevices } from 'react-native-esp-provisioning';
-import type { BleDevice } from 'src/types';
+import type { BleDevice } from 'src/entities';
 import { styles } from './styles';
 import { strings } from './strings';
 import { Device } from './Device';
@@ -40,12 +40,12 @@ export const DevicesList: React.FC = () => {
   return (
     <SafeAreaView style={styles.navBar}>
       <View style={styles.container}>
-        <Text>{strings.title}</Text>
+        <Text style={styles.title}>{strings.title}</Text>
         <View>
           <FlatList<BleDevice>
             data={bleDevices}
             renderItem={({ item }) => <Device device={item} />}
-            keyExtractor={(item) => item.address.toString()}
+            keyExtractor={(item) => item.deviceName}
           />
         </View>
       </View>
