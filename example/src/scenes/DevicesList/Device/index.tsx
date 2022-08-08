@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { provision, scanWifi } from 'react-native-esp-provisioning';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import { provision, scanWifi, scanWifiAndroid } from '../../../../../src/index';
 import type { BleDevice } from 'src/entities';
 
 import { styles } from './styles';
@@ -9,10 +9,21 @@ interface Props {
   device: BleDevice;
 }
 
+const SSID = 'Xmartlabs';
+const PASS_PHRASE = 'Xmartlabs33';
+
 export const Device: React.FC<Props> = (props) => {
   const onPress = async () => {
-    // const wifiList = await scanWifi(props.device);
-    // console.log('## wifiList: ', wifiList);
+    console.log('## onPress START');
+    let wifiList = [];
+    if (Platform.OS === 'ios') {
+      wifiList = await scanWifi(props.device);
+    } else {
+      console.log('## scanWifiAndroid START');
+      wifiList = await scanWifiAndroid(props.device.uuid, props.device.address);
+      console.log('## wifiList: ', wifiList);
+    }
+
     // const provisioningStatus = await provision(props.device, SSID, PASS_PHRASE);
     // console.log('## provisioningStatus: ', provisioningStatus);
   };

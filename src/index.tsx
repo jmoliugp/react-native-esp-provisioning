@@ -30,6 +30,13 @@ export function scanWifi(rawEspDevice: BleDevice): Promise<WifiNetwork[]> {
   return EspProvisioning.scanWifi(rawEspDevice);
 }
 
+export function scanWifiAndroid(
+  uuid: String,
+  address: String
+): Promise<WifiNetwork[]> {
+  return EspProvisioning.scanWifi(address, uuid);
+}
+
 export function provision(
   rawEspDevice: BleDevice,
   ssid: string,

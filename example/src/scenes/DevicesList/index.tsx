@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { View, Text, SafeAreaView, FlatList, Platform } from 'react-native';
-import { getBleDevices } from 'react-native-esp-provisioning';
+import { getBleDevices } from '../../../../src/index';
 import type { BleDevice } from 'src/entities';
 import { styles } from './styles';
 import { strings } from './strings';
