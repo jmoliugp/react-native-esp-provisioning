@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.espressif.provisioning.*
 import com.espressif.provisioning.listeners.BleScanListener
+import com.espressif.provisioning.listeners.ProvisionListener
 import com.espressif.provisioning.listeners.WiFiScanListener
 import com.facebook.react.bridge.*
 import org.greenrobot.eventbus.EventBus
@@ -61,10 +62,6 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
         foundBLEDevices.forEach { (address, bleDevice) ->
           val device: WritableMap = Arguments.createMap();
 
-          Log.d(
-            "ESPProvisioning",
-            "## foundBLEDevice - device.name: ${foundBLEDevices[address]?.device?.name}"
-          )
 
           device.putMap("advertisementData", null);
           device.putString("address", address);
@@ -108,8 +105,26 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
     })
   }
 
+
   @ReactMethod
   fun scanWifi(deviceAddress: String, mainUUID: String, promise: Promise) {
+    val onSuccess = {
+      scanWifiNetworks(promise)
+    }
+    connectToDevice(
+      deviceAddress = deviceAddress,
+      mainUUID = mainUUID,
+      onReject = promise::reject,
+      onSuccess = onSuccess
+    )
+  }
+
+  private fun connectToDevice(
+    deviceAddress: String,
+    mainUUID: String,
+    onSuccess: () -> Unit,
+    onReject: (Throwable) -> Unit
+  ) {
     val espDevice: ESPDevice =
       ESPProvisionManager.getInstance(reactApplicationContext).createESPDevice(
         ESPConstants.TransportType.TRANSPORT_BLE,
@@ -119,12 +134,63 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
     espDevice.setProofOfPossession("abcd1234")
 
     ConnectEventBusRegister.createAndRegister(
-      onSuccess = {
-        scanWifiNetworks(promise)
-      },
-      onReject = promise::reject
+      onSuccess = onSuccess,
+      onReject = onReject
     )
-    espDevice.connectBLEDevice(device.device, mainUUID);
+    espDevice.connectBLEDevice(device.device, mainUUID)
+  }
+
+  @ReactMethod
+  fun provision(
+    deviceAddress: String,
+    mainUUID: String,
+    ssid: String,
+    password: String,
+    promise: Promise
+  ) {
+    val onSuccess = {
+      ESPProvisionManager.getInstance(reactApplicationContext).espDevice
+        .provision(ssid, password, object : ProvisionListener {
+          override fun createSessionFailed(e: java.lang.Exception?) {
+            // TODO("Not yet implemented")
+          }
+
+          override fun wifiConfigSent() {
+            // TODO("Not yet implemented")
+          }
+
+          override fun wifiConfigFailed(e: java.lang.Exception?) {
+            // TODO("Not yet implemented")
+          }
+
+          override fun wifiConfigApplied() {
+            // TODO("Not yet implemented")
+          }
+
+          override fun wifiConfigApplyFailed(e: java.lang.Exception?) {
+            // TODO("Not yet implemented")
+          }
+
+          override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
+            // TODO("Not yet implemented")
+          }
+
+          override fun deviceProvisioningSuccess() =
+            promise.resolve("SUCCESS")
+
+
+          override fun onProvisioningFailed(e: java.lang.Exception?) {
+            // TODO("Not yet implemented")
+          }
+
+        })
+    }
+    connectToDevice(
+      deviceAddress = deviceAddress,
+      mainUUID = mainUUID,
+      onReject = promise::reject,
+      onSuccess = onSuccess
+    )
   }
 }
 
@@ -143,8 +209,6 @@ internal class ConnectEventBusRegister(
 
   @Subscribe(threadMode = ThreadMode.MAIN)
   fun onMessageEvent(event: DeviceConnectionEvent) {
-    Log.d("ESPProvisioning SOLO", event.eventType.toString());
-
     if (event.eventType == ESPConstants.EVENT_DEVICE_CONNECTED) {
       onSuccess()
     } else {
@@ -165,7 +229,7 @@ internal class DisconnectEventBusRegister(private val disconnectCallback: () -> 
 
   @Subscribe(threadMode = ThreadMode.MAIN)
   fun onMessageEvent(event: DeviceConnectionEvent) {
-    Log.d("ESPProvisioning SOLO", event.eventType.toString());
+
 
     if (event.eventType == ESPConstants.EVENT_DEVICE_DISCONNECTED) {
       disconnectCallback();

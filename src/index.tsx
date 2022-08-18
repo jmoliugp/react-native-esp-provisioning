@@ -44,3 +44,12 @@ export function provision(
 ): Promise<ProvisionStatus> {
   return EspProvisioning.provision(rawEspDevice, ssid, passPhrase);
 }
+
+export function provisionAndroid(
+  uuid: String,
+  address: String,
+  ssid: string,
+  passPhrase: string
+): Promise<ProvisionStatus> {
+  return EspProvisioning.provision(address, uuid, ssid, passPhrase);
+}

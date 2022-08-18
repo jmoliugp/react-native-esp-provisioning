@@ -1,6 +1,11 @@
 import React from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
-import { provision, scanWifi, scanWifiAndroid } from '../../../../../src/index';
+import {
+  provision,
+  provisionAndroid,
+  scanWifi,
+  scanWifiAndroid,
+} from '../../../../../src/index';
 import type { BleDevice } from 'src/entities';
 
 import { styles } from './styles';
@@ -24,8 +29,13 @@ export const Device: React.FC<Props> = (props) => {
       console.log('## wifiList: ', wifiList);
     }
 
-    // const provisioningStatus = await provision(props.device, SSID, PASS_PHRASE);
-    // console.log('## provisioningStatus: ', provisioningStatus);
+    const provisioningStatus = await provisionAndroid(
+      props.device.uuid,
+      props.device.address,
+      SSID,
+      PASS_PHRASE
+    );
+    console.log('## provisioningStatus: ', provisioningStatus);
   };
 
   return (
