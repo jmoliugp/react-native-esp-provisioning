@@ -67,7 +67,6 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
           device.putString("address", address);
           device.putString("deviceName", bleDevice.device.name);
           device.putString("proofOfPossession", "abcd1234")
-          //device.putString("transport", bleDevice.device.)
           device.putString("uuid", bleDevice.uuids.first().uuid.toString());
           result.pushMap(device)
         }
@@ -152,7 +151,7 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
       ESPProvisionManager.getInstance(reactApplicationContext).espDevice
         .provision(ssid, password, object : ProvisionListener {
           override fun createSessionFailed(e: java.lang.Exception?) {
-            // TODO("Not yet implemented")
+            promise.reject("500", "Create session failed")
           }
 
           override fun wifiConfigSent() {
@@ -160,7 +159,7 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
           }
 
           override fun wifiConfigFailed(e: java.lang.Exception?) {
-            // TODO("Not yet implemented")
+            promise.reject("500", "Wifi connection failed")
           }
 
           override fun wifiConfigApplied() {
@@ -168,11 +167,11 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
           }
 
           override fun wifiConfigApplyFailed(e: java.lang.Exception?) {
-            // TODO("Not yet implemented")
+            promise.reject("500", "Wifi connection applied failed")
           }
 
           override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
-            // TODO("Not yet implemented")
+            promise.reject("500", "Provision failed from device")
           }
 
           override fun deviceProvisioningSuccess() =
@@ -180,7 +179,7 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
 
 
           override fun onProvisioningFailed(e: java.lang.Exception?) {
-            // TODO("Not yet implemented")
+            promise.reject("500", "Provision failed")
           }
 
         })
