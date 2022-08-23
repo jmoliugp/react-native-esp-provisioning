@@ -1,22 +1,20 @@
 import android.Manifest
 import android.bluetooth.BluetoothDevice
-import android.content.pm.PackageManager
 import android.bluetooth.le.ScanResult
+import android.content.pm.PackageManager
+import android.os.Handler
 import android.os.ParcelUuid
-import com.espressif.provisioning.listeners.BleScanListener
-
-import androidx.core.app.ActivityCompat
 import android.util.Log
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import com.espressif.provisioning.*
-
+import com.espressif.provisioning.listeners.BleScanListener
+import com.espressif.provisioning.listeners.ProvisionListener
 import com.espressif.provisioning.listeners.WiFiScanListener
 import com.facebook.react.bridge.*
 import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.ThreadMode
-
 import org.greenrobot.eventbus.Subscribe
-
-
+import org.greenrobot.eventbus.ThreadMode
 
 
 class EspProvisioningModule(reactContext: ReactApplicationContext) :
@@ -26,12 +24,6 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
     return "EspProvisioning"
   }
 
-  // Example method
-  // See https://reactnative.dev/docs/native-modules-android
-  @ReactMethod
-  fun multiply(a: Int, b: Int, promise: Promise) {
-    promise.resolve(a * b)
-  }
 
   private val foundBLEDevices = HashMap<String, BleDevice>();
 
@@ -67,123 +59,195 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
 
       override fun scanCompleted() {
         val result = WritableNativeArray();
-
         foundBLEDevices.forEach { (address, bleDevice) ->
           val device: WritableMap = Arguments.createMap();
 
-          Log.d("ESPProvisioning", "## foundBLEDevice - device.name: $foundBLEDevices[it]?.name")
 
+          device.putMap("advertisementData", null);
           device.putString("address", address);
-          device.putString("name", bleDevice.device.name);
+          device.putString("deviceName", bleDevice.device.name);
+          device.putString("proofOfPossession", "abcd1234")
           device.putString("uuid", bleDevice.uuids.first().uuid.toString());
           result.pushMap(device)
         }
 
-        // Return found BLE devices
         promise.resolve(result);
       }
 
-      override fun onFailure(p0: Exception?) {
-        promise.reject("500", p0.toString())
-      }
-    });
-  }
-  lateinit var esp: ESPDevice
-  @ReactMethod
-  fun connectToDevice(
-    deviceAddress: String,
-    deviceProofOfPossession: String,
-    mainUUID: String,
-    promise: Promise
-  ) {
-    Log.e("ESPProvisioning", "## connectBleDevice")
-
-    // TODO: CHECK IF I NEED ALSO TO CHECK ANDROID 12 AND DIFFERENT VERSIONS
-    if (ActivityCompat.checkSelfPermission(
-        reactApplicationContext,
-        Manifest.permission.ACCESS_FINE_LOCATION
-      ) != PackageManager.PERMISSION_GRANTED
-    ) {
-      promise.reject("500", "Not enough permissions");
-      return
-    }
-
- esp =ESPProvisionManager.getInstance(reactApplicationContext).createESPDevice(
-      ESPConstants.TransportType.TRANSPORT_BLE,
-      ESPConstants.SecurityType.SECURITY_1
-    );
-    // esp.proofOfPossession = deviceProofOfPossession
-
-
-    val device = foundBLEDevices[deviceAddress]
-    if (device == null) {
-      promise.reject("500", "Device not found, invalid $deviceAddress")
-      return
-    }
-
-    esp.connectBLEDevice(device.device, mainUUID);
-    EventBus.getDefault().register(ConnectEventBusRegister(promise));
+      override fun onFailure(p0: Exception?) = promise.reject("500", p0.toString())
+    })
   }
 
-  @ReactMethod
-  fun scanWifiList(
-    deviceAddress: String,
-    deviceProofOfPossession: String,
-    mainUUID: String,
-    promise: Promise
-  ) {
-//    val device = ESPProvisionManager.getInstance(reactApplicationContext).espDevice
-
-//    val device: ESPDevice = ESPProvisionManager.getInstance(reactApplicationContext).createESPDevice(
-//      ESPConstants.TransportType.TRANSPORT_BLE,
-//      ESPConstants.SecurityType.SECURITY_0
-//    );
-//    device.proofOfPossession = deviceProofOfPossession
-
-
-   // esp.proofOfPossession = deviceProofOfPossession
-
-
-    Log.e("ESPProvisioning", "Start scan")
-    if(esp == null) {
-      promise.reject("No device found")
-      return;
+  private fun scanWifiNetworks(promise: Promise) {
+    val disconnectListener = DisconnectEventBusRegister.createAndRegister {
+      promise.reject(EspProvisioningError("Device disconnected while scan networks"))
     }
 
-    esp.scanNetworks(object: WiFiScanListener {
-      override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
-        val result = WritableNativeArray();
-        wifiList?.forEach {
-          val network: WritableMap = Arguments.createMap()
-          network.putString("name", it.wifiName);
-          network.putInt("rssi", it.rssi);
-          network.putInt("security", it.security);
-          result.pushMap(network)
-        }
+    val provisionManager = ESPProvisionManager.getInstance(reactApplicationContext)
+    provisionManager.espDevice.scanNetworks(object : WiFiScanListener {
+      override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>) {
+        Log.e("scan", "onWifiListReceived list length ${wifiList.size}")
+        val result = WritableNativeArray()
+          .also { array ->
+            wifiList.map(WiFiAccessPoint::parse)
+              .forEach(array::pushMap)
+          }
         promise.resolve(result)
+        disconnectListener.unregister()
       }
 
-      override fun onWiFiScanFailed(p0: java.lang.Exception?) {
-        Log.e("ESPProvisioning ", "WiFi scan failed", p0)
-        promise.reject("Failed to get Wi-Fi scan list")
+      override fun onWiFiScanFailed(e: java.lang.Exception) {
+        Log.e("scan", "onWiFiScanFailed", e)
+        promise.resolve(EspProvisioningError("onWiFiScanFailed: Scan error", e))
+        disconnectListener.unregister()
       }
     })
   }
 
+
+  @ReactMethod
+  fun scanWifi(deviceAddress: String, mainUUID: String, promise: Promise) {
+    val onSuccess = {
+      scanWifiNetworks(promise)
+    }
+    connectToDevice(
+      deviceAddress = deviceAddress,
+      mainUUID = mainUUID,
+      onReject = promise::reject,
+      onSuccess = onSuccess
+    )
+  }
+
+  private fun connectToDevice(
+    deviceAddress: String,
+    mainUUID: String,
+    onSuccess: () -> Unit,
+    onReject: (Throwable) -> Unit
+  ) {
+    val espDevice: ESPDevice =
+      ESPProvisionManager.getInstance(reactApplicationContext).createESPDevice(
+        ESPConstants.TransportType.TRANSPORT_BLE,
+        ESPConstants.SecurityType.SECURITY_1
+      )
+    val device = foundBLEDevices[deviceAddress]!!
+    espDevice.setProofOfPossession("abcd1234")
+
+    ConnectEventBusRegister.createAndRegister(
+      onSuccess = onSuccess,
+      onReject = onReject
+    )
+    espDevice.connectBLEDevice(device.device, mainUUID)
+  }
+
+  @ReactMethod
+  fun provision(
+    deviceAddress: String,
+    mainUUID: String,
+    ssid: String,
+    password: String,
+    promise: Promise
+  ) {
+    val onSuccess = {
+      ESPProvisionManager.getInstance(reactApplicationContext).espDevice
+        .provision(ssid, password, object : ProvisionListener {
+          override fun createSessionFailed(e: java.lang.Exception?) {
+            promise.reject("500", "Create session failed")
+          }
+
+          override fun wifiConfigSent() {
+            // TODO("Not yet implemented")
+          }
+
+          override fun wifiConfigFailed(e: java.lang.Exception?) {
+            promise.reject("500", "Wifi connection failed")
+          }
+
+          override fun wifiConfigApplied() {
+            // TODO("Not yet implemented")
+          }
+
+          override fun wifiConfigApplyFailed(e: java.lang.Exception?) {
+            promise.reject("500", "Wifi connection applied failed")
+          }
+
+          override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
+            promise.reject("500", "Provision failed from device")
+          }
+
+          override fun deviceProvisioningSuccess() =
+            promise.resolve("SUCCESS")
+
+
+          override fun onProvisioningFailed(e: java.lang.Exception?) {
+            promise.reject("500", "Provision failed")
+          }
+
+        })
+    }
+    connectToDevice(
+      deviceAddress = deviceAddress,
+      mainUUID = mainUUID,
+      onReject = promise::reject,
+      onSuccess = onSuccess
+    )
+  }
 }
+
 
 internal data class BleDevice(val uuids: List<ParcelUuid>, val device: BluetoothDevice)
 
-class ConnectEventBusRegister(private val promise: Promise){
+internal class ConnectEventBusRegister(
+  private val onSuccess: () -> Unit,
+  private val onReject: (Throwable) -> Unit
+) {
+  companion object {
+    fun createAndRegister(onSuccess: () -> Unit, onReject: (Throwable) -> Unit) =
+      ConnectEventBusRegister(onSuccess, onReject)
+        .also { register -> EventBus.getDefault().register(register) }
+  }
+
   @Subscribe(threadMode = ThreadMode.MAIN)
   fun onMessageEvent(event: DeviceConnectionEvent) {
-    Log.d("ESPProvisioning SOLO", event.eventType.toString());
-    if (event.eventType == ESPConstants.EVENT_DEVICE_CONNECTED){
-      promise.resolve("Connection success")
+    if (event.eventType == ESPConstants.EVENT_DEVICE_CONNECTED) {
+      onSuccess()
     } else {
-      // TODO implement error
-      promise.reject("500", "Device not found, invalid ")
+      onReject(RuntimeException("CONNECTION_REJECTED: ${event.eventType}"))
     }
-    EventBus.getDefault().unregister(this)
+    unregister()
   }
+
+  private fun unregister() = EventBus.getDefault().unregister(this)
 }
+
+internal class DisconnectEventBusRegister(private val disconnectCallback: () -> Unit) {
+  companion object {
+    fun createAndRegister(disconnectCallback: () -> Unit) =
+      DisconnectEventBusRegister(disconnectCallback)
+        .also { register -> EventBus.getDefault().register(register) }
+  }
+
+  @Subscribe(threadMode = ThreadMode.MAIN)
+  fun onMessageEvent(event: DeviceConnectionEvent) {
+
+
+    if (event.eventType == ESPConstants.EVENT_DEVICE_DISCONNECTED) {
+      disconnectCallback();
+      unregister()
+    }
+  }
+
+  fun unregister() = EventBus.getDefault().unregister(this)
+}
+
+class EspProvisioningError(message: String, cause: Throwable? = null) :
+  RuntimeException(message, cause)
+
+fun WiFiAccessPoint.parse() = Arguments.createMap()
+  .apply {
+    putString("ssid", wifiName)
+    putInt("rssi", rssi)
+    putString("channel", null)
+    putString("auth", null)
+  }
+
+
