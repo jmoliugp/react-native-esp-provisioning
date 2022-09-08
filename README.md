@@ -1,26 +1,12 @@
 # react-native-esp-provisioning
 
-An esp provisioning library for react native that wraps the native ones
+This is a library designed for provisioning ESP-32 devices in React native mobile apps. Behind the hood it wraps and exposes the official Espressif provisioning libraries for Android and iOS.
 
 ## Installation
 
 ```sh
 npm install react-native-esp-provisioning
 ```
-
-## Usage
-
-```js
-import { multiply } from "react-native-esp-provisioning";
-
-// ...
-
-const result = await multiply(3, 7);
-```
-
-## Contributing
-
-See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
 
 ## License
 
