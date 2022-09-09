@@ -1,7 +1,7 @@
 {
-  "name": "@jmoliugp/react-native-esp-provisioning",
-  "version": "0.1.0",
-  "description": "An esp provisioning library for react native that wraps the native ones",
+  "name": "@fellowproducts/react-native-esp-provisioning",
+  "version": "1.0.0",
+  "description": "This is a library designed for provisioning ESP-32 devices in React native mobile apps",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
   "types": "lib/typescript/index.d.ts",
@@ -36,13 +36,13 @@
     "ios",
     "android"
   ],
-  "repository": "git://github.com/jmoliugp/react-native-esp-provisioning.git",
-  "author": "Solo <juan@xmartlabs.com> (https://github.com/jmoliugp)",
+  "repository": "git://github.com/fellowproducts/react-native-esp-provisioning.git",
+  "author": "Solo <juan@xmartlabs.com> (https://github.com/FellowProducts/react-native-esp-provisioning)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jmoliugp/react-native-esp-provisioning/issues"
+    "url": "https://github.com/FellowProducts/react-native-esp-provisioning/issues"
   },
-  "homepage": "https://github.com/jmoliugp/react-native-esp-provisioning#readme",
+  "homepage": "https://github.com/FellowProducts/react-native-esp-provisioning#readme",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
@@ -64,7 +64,7 @@
     "react": "17.0.2",
     "react-native": "0.66.3",
     "react-native-builder-bob": "^0.18.0",
-    "release-it": "^14.2.2",
+    "release-it": "^12.4.3",
     "typescript": "^4.1.3"
   },
   "peerDependencies": {
