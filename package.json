@@ -1,6 +1,6 @@
 {
   "name": "@fellowproducts/react-native-esp-provisioning",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "This is a library designed for provisioning ESP-32 devices in React native mobile apps",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
