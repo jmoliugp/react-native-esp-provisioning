@@ -44,7 +44,7 @@
   },
   "homepage": "https://github.com/FellowProducts/react-native-esp-provisioning#readme",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com/@fellowproducts"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^11.0.0",
