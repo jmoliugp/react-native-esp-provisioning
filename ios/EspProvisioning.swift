@@ -96,13 +96,15 @@ class EspProvisioning: NSObject {
                     // unknownFields
                 ]
               }
-
+              device.disconnect()
               resolve(wifiNetworks)
             }
           }
         case let .failedToConnect(error):
+          device.disconnect()
           reject("404", "scanWifi", error)
         default:
+          device.disconnect()
           reject("404", "scanWifi", NSError(domain: "EspProvisioning", code: 500))
         }
       }
@@ -132,28 +134,35 @@ class EspProvisioning: NSObject {
         switch status {
         case .connected:
           device.provision(ssid: ssid, passPhrase: passPhrase) { status in
-              switch status {
-              case .success:
-                resolve("SUCCESS")
-              case let .failure(error):
-                switch error {
-                case .configurationError:
-                  resolve("CONFIGURATION_ERROR")
-                case .sessionError:
-                  resolve("SESSION_ERROR")
-                case .wifiStatusDisconnected:
-                  resolve("WIFI_DISCONNECTED")
-                default:
-                  resolve("UNKNOWN_ERROR")
-                }
-              case .configApplied:
-                  NSLog("configApplied")
+            switch status {
+            case .success:
+              device.disconnect()
+              resolve("SUCCESS")
+            case let .failure(error):
+              switch error {
+              case .configurationError:
+                device.disconnect()
+                resolve("CONFIGURATION_ERROR")
+              case .sessionError:
+                device.disconnect()
+                resolve("SESSION_ERROR")
+              case .wifiStatusDisconnected:
+                device.disconnect()
+                resolve("WIFI_DISCONNECTED")
+              default:
+                device.disconnect()
+                resolve("UNKNOWN_ERROR")
               }
+            case .configApplied:
+              NSLog("configApplied")
+            }
           }
         case .failedToConnect(_):
-            reject("404", "provision", NSError(domain: "EspProvisioning", code: 501))
+          device.disconnect()
+          reject("404", "provision", NSError(domain: "EspProvisioning", code: 501))
         case .disconnected:
-            reject("404", "provision", NSError(domain: "EspProvisioning", code: 502))
+          device.disconnect()
+          reject("404", "provision", NSError(domain: "EspProvisioning", code: 502))
         }
       }
     }
