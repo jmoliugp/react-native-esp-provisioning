@@ -39,8 +39,7 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
       promise.reject("500", "Location Permission denied")
       return;
     }
-
-    // Search for BLE devices
+    
     ESPProvisionManager.getInstance(reactApplicationContext).searchBleEspDevices(prefix, object :
       BleScanListener {
       override fun scanStartFailed() {
@@ -92,12 +91,14 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
             wifiList.map(WiFiAccessPoint::parse)
               .forEach(array::pushMap)
           }
+        provisionManager.espDevice.disconnectDevice()
         promise.resolve(result)
         disconnectListener.unregister()
       }
 
       override fun onWiFiScanFailed(e: java.lang.Exception) {
         Log.e("scan", "onWiFiScanFailed", e)
+        provisionManager.espDevice.disconnectDevice()
         promise.resolve(EspProvisioningError("onWiFiScanFailed: Scan error", e))
         disconnectListener.unregister()
       }
@@ -151,6 +152,7 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
       ESPProvisionManager.getInstance(reactApplicationContext).espDevice
         .provision(ssid, password, object : ProvisionListener {
           override fun createSessionFailed(e: java.lang.Exception?) {
+            ESPProvisionManager.getInstance(reactApplicationContext).espDevice.disconnectDevice()
             promise.reject("500", "Create session failed")
           }
 
@@ -159,6 +161,7 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
           }
 
           override fun wifiConfigFailed(e: java.lang.Exception?) {
+            ESPProvisionManager.getInstance(reactApplicationContext).espDevice.disconnectDevice()
             promise.reject("500", "Wifi connection failed")
           }
 
@@ -167,18 +170,24 @@ class EspProvisioningModule(reactContext: ReactApplicationContext) :
           }
 
           override fun wifiConfigApplyFailed(e: java.lang.Exception?) {
+            ESPProvisionManager.getInstance(reactApplicationContext).espDevice.disconnectDevice()
             promise.reject("500", "Wifi connection applied failed")
           }
 
           override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
+            ESPProvisionManager.getInstance(reactApplicationContext).espDevice.disconnectDevice()
             promise.reject("500", "Provision failed from device")
           }
 
-          override fun deviceProvisioningSuccess() =
+          override fun deviceProvisioningSuccess() {
+            ESPProvisionManager.getInstance(reactApplicationContext).espDevice.disconnectDevice()
             promise.resolve("SUCCESS")
+          }
+
 
 
           override fun onProvisioningFailed(e: java.lang.Exception?) {
+            ESPProvisionManager.getInstance(reactApplicationContext).espDevice.disconnectDevice()
             promise.reject("500", "Provision failed")
           }
 
